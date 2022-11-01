@@ -385,3 +385,10 @@ Main.prototype.init = function() {
 
 main = new Main();
 main.init();
+
+// https://github.com/Aetf/kwin-maxmize-to-new-desktop/issues/4
+workspace.clientAdded.connect(function(client) {
+        var area = workspace.clientArea(KWin.MaximizeArea, client);
+        var isMaximized = client.width >= area.width && client.height >= area.height;
+        if (isMaximized) {main.moveToNewDesktop(client);};
+});
