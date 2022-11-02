@@ -31,5 +31,9 @@
             <label>The window of WM_CLASS in the following list will be skipped.</label>
             <default></default>
         </entry>
+        <entry name="blockWMName" type="StringList">
+            <label>The window of WM_NAME in the following list will be skipped.</label>
+            <default></default>
+        </entry>
     </group>
 </kcfg>

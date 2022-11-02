@@ -44,6 +44,13 @@ Config.prototype.blockWMClass = function() {
     return classes;
 };
 
+Config.prototype.blockWMName = function() {
+    var names = readConfig("blockWMName", "").toString();
+    names = names.split(",");
+    return names;
+};
+
+
 function State() {
     this.savedDesktops = {};
     this.enabled = true;
@@ -63,6 +70,7 @@ function State() {
         this.cachedConfig.newDesktopPosition = config.newDesktopPosition();
         this.cachedConfig.keepNonEmptyDesktop = config.keepNonEmptyDesktop();
         this.cachedConfig.blockWMClass = config.blockWMClass();
+        this.cachedConfig.blockWMName = config.blockWMName();
     };
 
     this.reload();
@@ -83,9 +91,25 @@ State.prototype.isKnownClient = function(client) {
 }
 
 State.prototype.isSkippedClient = function (client) {
+    try {
     var idx = this.cachedConfig.blockWMClass.indexOf(client.resourceClass.toString());
     return idx != -1;
+    } catch (e) {
+        log(e);
+        return false;
+    }
 }
+
+State.prototype.isSkippedName = function (client) {
+    try {
+    var idx = this.cachedConfig.blockWMName.indexOf(client.resourceName.toString());
+    return idx != -1;
+    } catch (e) {
+        log(e);
+        return false;
+    }
+}
+
 
 State.prototype.getNextDesktop = function (client) {
     switch (this.cachedConfig.newDesktopPosition) {
@@ -149,7 +173,7 @@ function Main() {
         fullscreen: function(client, full) {
             log('handle fullscreen');
             self.state.debugDump();
-            if (!self.state.isTriggeredByFull() || self.state.isSkippedClient(client)) {
+            if (!self.state.isTriggeredByFull() || self.state.isSkippedClient(client) || self.state.isSkippedName(client)) {
                 log('handle fullscreen return');
                 return;
             }
@@ -166,7 +190,7 @@ function Main() {
         maximize: function(client, h, v) {
             log('handle maximize');
             self.state.debugDump();
-            if (!self.state.isTriggeredByMax() || self.state.isSkippedClient(client)) {
+            if (!self.state.isTriggeredByMax() || self.state.isSkippedClient(client) || self.state.isSkippedName(client)) {
                 log('handle maximize return');
                 return;
             }
@@ -386,9 +410,12 @@ Main.prototype.init = function() {
 main = new Main();
 main.init();
 
+
 // https://github.com/Aetf/kwin-maxmize-to-new-desktop/issues/4
 workspace.clientAdded.connect(function(client) {
         var area = workspace.clientArea(KWin.MaximizeArea, client);
         var isMaximized = client.width >= area.width && client.height >= area.height;
-        if (isMaximized) {main.moveToNewDesktop(client);};
+        var state = new State();
+        log('handle new window maximize');
+        if (!(!isMaximized || state.isSkippedClient(client) || state.isSkippedName(client))) {main.moveToNewDesktop(client);};
 });
